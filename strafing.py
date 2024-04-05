@@ -19,7 +19,7 @@ def StrafeToPartner():
     while not_seeing_partner:
         
         ep_chassis.move(x=0, y=y_val, z=0, xy_speed=0.7).wait_for_completed()
-        # Check if the detected robot bounding box is centered, if so, not_seeing_partner is false
+        #TODO Check if the detected robot bounding box is centered, if so, not_seeing_partner is false
 
 if __name__ == '__main__':
     ep_robot = robot.Robot()
