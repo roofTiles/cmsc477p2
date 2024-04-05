@@ -30,6 +30,18 @@ def GrabLego():
     # Move backward 20mm
     ep_arm.move(x=-20, y=5).wait_for_completed()
 
+def DropLego():
+    # Move forward 20mm
+    ep_arm.move(x=20, y=-5).wait_for_completed()
+
+    # close gripper
+    ep_gripper.open(power=50)
+    time.sleep(1)
+    ep_gripper.pause()
+
+    # Move backward 20mm
+    ep_arm.move(x=-20, y=5).wait_for_completed()
+
 if __name__ == '__main__':
     ep_robot = robot.Robot()
     ep_robot.initialize(conn_type="ap")
