@@ -15,21 +15,18 @@ model = YOLO("models/OnlyGripperIsNull.pt")
 # normalized to original image size
 def detect_object_in_image(c='robot', conf=0.8, image=None, ep_camera=None):
     if image == None:
-        image = ep_camera.read_cv2_image(strategy="newest", timeout=0.5)
+        image = ep_camera.read_cv2_image(strategy="newest", timeout=5)
     
-    else:
-        results = model.predict(source=image, show=True, conf = conf)
+    results = model.predict(source=image, show=True, conf = conf)
 
-        if len(results) > 1:
-            raise Exception("More than one lego detected!")
+    if len(results) > 1:
+        raise Exception("More than one lego detected!")
+    elif len(results) > 0:
+        return [False, None]
 
-        elif len(results) > 0:
-            return [False, None]
-
-        else: # only one lego found
-            boxes = result[0].boxes.xywhn
-
-            return [True, boxes]
+    else: # only one lego found
+        boxes = result[0].boxes.xywhn
+        return [True, boxes]
             
             
     
