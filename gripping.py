@@ -13,7 +13,7 @@ ep_robot = robot.Robot()
 ep_robot.initialize(conn_type="ap")
 ep_chassis = ep_robot.chassis
 
-def GrabLego():
+def GrabLego(ep_gripper=None, ep_arm=None):
     # open gripper
     ep_gripper.open(power=50)
     time.sleep(1)
@@ -30,7 +30,7 @@ def GrabLego():
     # Move backward 20mm
     ep_arm.move(x=-20, y=5).wait_for_completed()
 
-def DropLego():
+def DropLego(ep_gripper=None, ep_arm=None):
     # Move forward 20mm
     ep_arm.move(x=20, y=-5).wait_for_completed()
 
