@@ -2,7 +2,8 @@ from ultralytics import YOLO
 from robomaster import robot
 from robomaster import camera
 
-model = YOLO("models/OnlyGripperIsNull.pt")
+#model = YOLO("models/OnlyGripperIsNull.pt")
+model = YOLO("models/best.pt")
 
 # c is the desired class type for obj detection with the following
 # options 'robot' and 'lego'
@@ -13,20 +14,21 @@ model = YOLO("models/OnlyGripperIsNull.pt")
 
 # returns the bounding box array of format [x,y,w,h]
 # normalized to original image size
-def detect_object_in_image(c='robot', conf=0.8, image=None, ep_camera=None):
+def detect_object_in_image(c='robot', conf=0.5, image=None, ep_camera=None):
+
     if image == None:
         image = ep_camera.read_cv2_image(strategy="newest", timeout=5)
+
 
     classes = []
 
     if c == 'lego':
         classes=[0]
     if c == 'robot':
-        classes = [2]
+        classes = [1]
         
     results = model.predict(source=image, show=False, conf = conf,
                             imgsz=(384, 640), classes=classes)
-
     
     if len(results) > 1:
         raise Exception("More than one lego detected!")
