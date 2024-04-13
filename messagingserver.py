@@ -14,6 +14,3 @@ while True:
     if message == b"Reciever Grabbed":
         gripping.DropLego()
         socket.send(b"Passer Releasing")
-
-    #  Send reply back to client
-    socket.send(b"World")
