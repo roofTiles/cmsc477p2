@@ -13,34 +13,34 @@ ep_robot = robot.Robot()
 ep_robot.initialize(conn_type="ap")
 ep_chassis = ep_robot.chassis
 
-def GrabLego(ep_gripper=None, ep_arm=None):
+def GrabLego(ep_gripper=None, ep_arm=None, x=130, y=60, power=50):
     # open gripper
-    ep_gripper.open(power=50)
+    ep_gripper.open(power=power)
     time.sleep(1)
     ep_gripper.pause()
 
-    # Move forward 20mm
-    ep_arm.move(x=40, y=-5).wait_for_completed()
+    # Move forward xmm, drop down ymm
+    ep_arm.move(x=x, y=-y).wait_for_completed()
 
     # close gripper
-    ep_gripper.close(power=50)
+    ep_gripper.close(power=power)
     time.sleep(1)
     ep_gripper.pause()
 
-    # Move backward 20mm
-    ep_arm.move(x=-40, y=5).wait_for_completed()
+    # Move backward xmm, move up ymm
+    ep_arm.move(x=-x, y=y).wait_for_completed()
 
-def DropLego(ep_gripper=None, ep_arm=None):
-    # Move forward 20mm
-    ep_arm.move(x=40, y=-5).wait_for_completed()
+def DropLego(ep_gripper=None, ep_arm=None, x=130, y=60, power=50):
+    # Move forward xmm, drop down ymm
+    ep_arm.move(x=x, y=-y).wait_for_completed()
 
     # close gripper
-    ep_gripper.open(power=50)
+    ep_gripper.open(power=power)
     time.sleep(1)
     ep_gripper.pause()
 
-    # Move backward 20mm
-    ep_arm.move(x=-40, y=5).wait_for_completed()
+    # Move backward xmm, move up ymm
+    ep_arm.move(x=-x, y=y).wait_for_completed()
 
 if __name__ == '__main__':
     ep_robot = robot.Robot()
@@ -50,7 +50,8 @@ if __name__ == '__main__':
 
     ep_arm = ep_robot.robotic_arm
 
-    GrabLego()
+    GrabLego(ep_gripper=ep_gripper, ep_arm=ep_arm)
+    DropLego(ep_gripper=ep_gripper, ep_arm=ep_arm)
 
     ep_robot.close()
 

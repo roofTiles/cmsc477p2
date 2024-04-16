@@ -71,14 +71,13 @@ def move_to_lego(translation_speed = 0.20, rotational_speed = 10,
                 ep_chassis.drive_speed(x=-1*translation_speed * k_t * distance_error, y=0,
                                 z=0, timeout=5)
 
-            if (lego_dist < 61): # WORKING ON THIS
-                print('IM HERE')
-                #ep_chassis.drive_speed(x=0, y=0, z=0)
-                ep_chassis.drive_speed(x=, y=0, z=0)
-                print('IM HERE AGAIN')
-                #ep_chassis.move(x=0.21, y=0, z=0, xy_speed=0.3).wait_for_completed()
-                print('IM HERE MOVE')
+            if (lego_dist < 61):
+                print("GIVER: MOVING TOWARDS LEGO TOWER, NOT USING CAMERA ANYMORE")
+                speed = 0.075
+                ep_chassis.drive_speed(x=speed, y=0, z=0) # drive towards lego
+                time.sleep(0.60/speed)
                 ep_chassis.drive_speed(x=0, y=0, z=0)
+                time.sleep(0.1)
                 return
 
         else:
@@ -102,3 +101,4 @@ if __name__ == '__main__':
     search_lego(ep_camera=ep_camera)
     move_to_lego(ep_camera=ep_camera)
     gripping.GrabLego(ep_gripper=ep_gripper, ep_arm=ep_arm)
+    gripping.DropLego(ep_gripper=ep_gripper, ep_arm=ep_arm)
