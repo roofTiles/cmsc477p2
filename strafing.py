@@ -17,15 +17,19 @@ ep_robot = robot.Robot()
 ep_robot.initialize(conn_type="ap")
 ep_chassis = ep_robot.chassis
 
-def StrafeToPartner():
-    not_seeing_partner = True
-    y_val = 0.2
-    while not_seeing_partner:
-        
-        ep_chassis.move(x=0, y=y_val, z=0, xy_speed=0.7).wait_for_completed()
-        #TODO Check if the detected robot bounding box is centered, if so, not_seeing_partner is false
+def StrafeToPartner(ep_camera=None):
+    seeing_partner = False
+    tspeed = 0.2
+    while not seeing_partner:
+        lastTime = time.time()
+        if search_robot(translation_speed=tspeed, k=.01, ep_camera=ep_camera) < 50:
+            not_seeing_partner = True
+        elif time.time()-lastTime > 6:
+            tspeed = -tspeed
+            
 
-def search_lego(lin_speed = 20, k = 0.01, ep_camera=None): 
+
+def search_robot(translation_speed = 20, k = 0.01, ep_camera=None): 
     
     distance = 1000000
     print('RECEIVER: Seaching for Legos')
@@ -40,17 +44,18 @@ def search_lego(lin_speed = 20, k = 0.01, ep_camera=None):
             bb = results[1] # bounding box -  array of format [x,y,w,h] scaled to image size of (384, 640)
             horizontal_center = bb[0] + bb[2]/2
             distance = horizontal_center - 640/2 # finding error in horizontal
-            ep_chassis.drive_speed(x=0, z=k * distance * lin_speed, z=0, timeout=5)
+            ep_chassis.drive_speed(x=0, z=k * distance * translation_speed, z=0, timeout=5)
 
         else:
-            ep_chassis.drive_speed(x=0, y=lin_speed, z=0, timeout=5)
+            ep_chassis.drive_speed(x=0, y=translation_speed, z=0, timeout=5)
 
         time.sleep(0.1)
 
     ep_chassis.drive_speed(x=0, y=0, z=0, timeout=5) # stop rotating
     print('RECEIVER: Facing the Legos')
+    return distance
 
-def move_to_lego(translation_speed = 0.20, rotational_speed = 10, 
+def move_to_robot(translation_speed = 0.20, rotational_speed = 10, 
                  k_t = 0.01/2, k_r = 0.01, ep_camera=None):
 
     horizontal_distance = 1000000
