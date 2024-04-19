@@ -85,6 +85,8 @@ if __name__ == '__main__':
                     plt.plot(domain, rng, color="red", linewidth=1)
             except TypeError:
                 print('Target line is out of view')
+                # orient robot
+                ep_chassis.speed(x=0, y=0, z=np.rad2deg(np.pi/6))
 
             plt.imshow(image)
             plt.show()
