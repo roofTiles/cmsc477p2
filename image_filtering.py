@@ -11,7 +11,7 @@ if __name__ == '__main__':
     ep_robot.initialize(conn_type="ap")
     ep_chassis = ep_robot.chassis
     ep_camera = ep_robot.camera
-    ep_camera.start_video_stream(display=False, resolution=camera.STREAM_360P)
+    ep_camera.start_video_stream(display=True, resolution=camera.STREAM_360P)
 
     while True:
         try:
@@ -75,7 +75,7 @@ if __name__ == '__main__':
                             y.append(m * j + y0)
 
                     # orient robot
-                    ep_chassis.speed(x=0, y=0, z=np.rad2deg(yaw))
+                    ep_chassis.move(x=0, y=0, z=np.rad2deg(yaw), z_speed=20).wait_for_completed()
 
                     # insert proportional controller here to move robot forward
 
@@ -86,7 +86,7 @@ if __name__ == '__main__':
             except TypeError:
                 print('Target line is out of view')
                 # orient robot
-                ep_chassis.speed(x=0, y=0, z=np.rad2deg(np.pi/6))
+                ep_chassis.move(x=0, y=0, z=np.rad2deg(np.pi/6), z_speed=20).wait_for_completed()
 
             plt.imshow(image)
             plt.show()
