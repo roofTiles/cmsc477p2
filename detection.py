@@ -67,9 +67,8 @@ def detect_endpoint(image=None, color="yellow", show=True):
     if color=="yellow":
         mask = cv2.inRange(image, np.asarray([0, 200, 200]), np.asarray([150, 255, 255])) #bgr channel order
         image = cv2.bitwise_and(image, image, mask = mask)
-        
-    # gaussian blurring it before binarization
-    image = cv2.GaussianBlur(image, (7, 7), 0)
+
+    cv2.imshow('mask', image)
 
     # performing erosion to erase false positives
     kernel = np.ones((2, 2), np.uint8)
@@ -105,7 +104,7 @@ def detect_endpoint(image=None, color="yellow", show=True):
     
     
 if __name__ == '__main__':
-    img = cv2.imread("C:\\umd\\senior\\cmsc477\\Project 2\\proj_code\\endpoint_test\\8.jpg")
+    img = cv2.imread("C:\\umd\\senior\\cmsc477\\Project 2\\proj_code\\endpoint_test\\6.jpg")
     img = cv2.resize(img, (640, 384))
     detect_endpoint(image=img)
             
