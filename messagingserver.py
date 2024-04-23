@@ -7,7 +7,8 @@ def StartPassingComms():
     context = zmq.Context()
     socket = context.socket(zmq.REP)
     socket.bind("tcp://*:5555")
-    while True:
+    waiting = True
+    while waiting:
 
         message = socket.recv()
         print("Received request: %s" % message)
@@ -15,3 +16,6 @@ def StartPassingComms():
         if message == b"Reciever Grabbed":
             gripping.DropLego()
             socket.send(b"Passer Releasing")
+            print("Passer Releasing")
+            waiting = False
+
