@@ -9,56 +9,49 @@ import gripping
 # Defines functionality that is specific
 # to the robot handing off the lego tower (the giver)
 
-
-# tell robot to move towards the giver
-# k_t is translational proportional controller
-# k_r is rotational proportional controller
-def move_to_robot(translation_speed = 0.40, rotational_speed = 40, 
-                 k_t = 0.01/2, k_r = 0.05, ep_camera=None):
-
-    horizontal_distance = 1000000
-    lego_dist = 100000
-    goal_robot_dist = 30 # cm
+# have receiver strafe to the giver
+def strafe_to_giver(translational_speed = 0.075, k = 0.05, ep_camera=None):
     
-    print('RECEIVER: Moving towards giver')
+    distance = 1000000
+    print('RECEIVER: Strafing to Giver robot')
 
-    while (np.abs(lego_dist - goal_robot_dist) > 5):
-           
-        results = detection.detect_object_in_image('robot', ep_camera=ep_camera)
+    lastTime = time.time() # get time started search
+    
+    # want bounding box as close to center of img in horizontal dir
+    while np.abs(distance) > 10: # bounding box x-center must be 10 away from center of img
+
+        results = detection.detect_object_in_image(c='robot', ep_camera=ep_camera)
 
         if results[0]: # if lego in FOV
-            
-            bb = results[1] # bounding box -  array of format [x,y,w,h] scaled to image size of (384, 640)
-            robot_dist = 1/(math.tan((bb[3]/384 * 68 * math.pi)/180.0)) * 37 # gives distance to robot in cm
+            bb = results[1] # bounding box -  array of format [x,y,w,h]
             horizontal_center = bb[0] + bb[2]/2
-            distance_error = goal_robot_dist - robot_dist # finding error in vertical
-            horizontal_distance = horizontal_center - 320 # finding error in horizontal
+            distance = horizontal_center - 360 # finding error in horizontal
 
-            print(robot_dist)
+            control = translational_speed * distance * k
+            
+            print("control: ", translational_speed * distance * k)
 
-            if (horizontal_distance > 10):
-                ep_chassis.drive_speed(x=-1*translation_speed * k_t * distance_error, y=0,
-                                z= rotational_speed * k_r * horizontal_distance, timeout=5)
-
-            if (horizontal_distance <= 10):
-                ep_chassis.drive_speed(x=-1*translation_speed * k_t * distance_error, y=0,
-                                z=0, timeout=5)
-
-            if (robot_dist < 41):
-                print("RECEIVER: MOVING TOWARDS GIVER, NOT USING CAMERA ANYMORE")
-                speed = 0.075
-                ep_chassis.drive_speed(x=speed, y=0, z=0) # drive towards robot
-                time.sleep(0.35/speed)
-                ep_chassis.drive_speed(x=0, y=0, z=0)
-                time.sleep(0.1)
-                return
+            if np.abs(control) < 0.06: # around when actuator starts acting weird
+                break
+            
+            ep_chassis.drive_speed(x=0, y=translational_speed * distance * k, z=0, timeout=5)
 
         else:
-            ep_chassis.drive_speed(x=translation_speed, y=0,
-                                z=0, timeout=5)
+
+            currTime = time.time()
+            if currTime-lastTime > 2: # switch directions if haven't seen robot in 2s
+                translational_speed = translational_speed*-1
             
-            time.sleep(0.1)
-    ep_chassis.drive_speed(x=0, y=0, z=0, timeout=5)
+            ep_chassis.drive_speed(x=0, y=translational_speed, z=0, timeout=5)
+
+        time.sleep(0.1)
+
+    ep_chassis.drive_speed(x=0, y=0, z=0, timeout=5) # stop moving
+    time.sleep(0.1)
+    print('RECEIVER: Facing Giver')
+
+# have receiver move to giver
+
 
 
 # make reeciver face endpoint
@@ -151,7 +144,14 @@ if __name__ == '__main__':
     ep_arm = ep_robot.robotic_arm
     
     ep_camera.start_video_stream(display=False)
-    gripping.LookDown(ep_gripper=ep_gripper, ep_arm=ep_arm, x=0, y=50) # have arm down before looking for endpoint
-    search_endpoint(ep_camera=ep_camera)
-    move_to_endpoint(ep_camera=ep_camera)
+
+    # for strafing to giver
+    strafe_to_giver(ep_camera=ep_camera)
+
+    # moving to giver
+
+    # for going to endpoint
+    #gripping.LookDown(ep_gripper=ep_gripper, ep_arm=ep_arm, x=0, y=50) # have arm down before looking for endpoint
+    #search_endpoint(ep_camera=ep_camera)
+    #move_to_endpoint(ep_camera=ep_camera)
     
