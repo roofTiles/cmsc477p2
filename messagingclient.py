@@ -14,12 +14,14 @@ def SendGrabMessage(request):
     
     print("Sending request %s …" % request)
     socket.send(b"Reciever Grabbed")
+    print("Reciever Grabbed")
 
     #  Get the reply.
     message = socket.recv()
     time.sleep(1)
     print("Received reply %s [ %s ]" % (request, message))
     if message == b"Passer Releasing":
+        print("Confirmed Release")
         return True
     else:
         return SendGrabMessage(request=request+1)
