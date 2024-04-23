@@ -21,7 +21,7 @@ def LookUp(ep_gripper=None, ep_arm=None, x=0, y=30, power=50):
     # Move forward xmm, drop down ymm
     ep_arm.move(x=x, y=y).wait_for_completed()
 
-def GrabLego(ep_gripper=None, ep_arm=None, x=60, y=60, power=100):
+def GrabLego(ep_gripper=None, ep_arm=None, x=60, y=100, power=100):
     # open gripper
     ep_gripper.open(power=power)
     time.sleep(1)
@@ -38,7 +38,7 @@ def GrabLego(ep_gripper=None, ep_arm=None, x=60, y=60, power=100):
     # Move backward xmm, move up ymm
     ep_arm.move(x=-x, y=y).wait_for_completed()
 
-def DropLego(ep_gripper=None, ep_arm=None, x=60, y=60, power=100):
+def DropLego(ep_gripper=None, ep_arm=None, x=60, y=100, power=100):
     # Move forward xmm, drop down ymm
     ep_arm.move(x=x, y=-y).wait_for_completed()
 

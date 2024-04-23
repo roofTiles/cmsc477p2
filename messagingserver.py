@@ -1,9 +1,7 @@
 import time
 import zmq
-import proj_2.gripping as gripping
 
-
-def StartPassingComms():
+def StartPassingComms(ep_gripper=None):
     context = zmq.Context()
     socket = context.socket(zmq.REP)
     socket.bind("tcp://*:5555")
@@ -14,8 +12,8 @@ def StartPassingComms():
         print("Received request: %s" % message)
 
         if message == b"Reciever Grabbed":
-            gripping.DropLego()
-            socket.send(b"Passer Releasing")
             print("Passer Releasing")
+            ep_gripper.open(power=100)
+            socket.send(b"Passer Releasing")
             waiting = False
 

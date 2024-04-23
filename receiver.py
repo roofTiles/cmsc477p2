@@ -5,6 +5,7 @@ import time
 import math
 import detection
 import gripping
+import messagingclient
 
 # Defines functionality that is specific
 # to the robot handing off the lego tower (the giver)
@@ -188,15 +189,24 @@ if __name__ == '__main__':
     
     ep_camera.start_video_stream(display=True)
 
+    # orient with line
+
+    # wait for giver to send message that ready to pass
+
     # for strafing to giver
     strafe_to_giver(ep_camera=ep_camera)
 
     # moving to giver
     gripping.LookDown(ep_arm=ep_arm, x = 80, y = 70)
-    #move_to_giver(ep_camera=ep_camera)
+    move_to_giver(ep_camera=ep_camera)
+    ep_gripper.close(power=100)
+
+    # send message to giver saying grabbed lego
+    messagingclient.SendGrabMessage(0)
     
     # for going to endpoint
+    
     #gripping.LookDown(ep_gripper=ep_gripper, ep_arm=ep_arm, x=0, y=50) # have arm down before looking for endpoint
-    search_endpoint(ep_camera=ep_camera)
-    move_to_endpoint(ep_camera=ep_camera)
+    #search_endpoint(ep_camera=ep_camera)
+    #move_to_endpoint(ep_camera=ep_camera)
     

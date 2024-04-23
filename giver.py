@@ -5,7 +5,7 @@ import time
 import math
 import detection
 import gripping
-#import messagingserver
+import messagingserver
 
 # Defines functionality that is specific
 # to the robot handing off the lego tower (the giver)
@@ -54,14 +54,16 @@ def move_to_lego(translation_speed = 0.20, rotational_speed = 10,
 
     while (np.abs(lego_dist - goal_lego_dist) > 5):
            
-        results = detection.detect_object_in_image('lego', ep_camera=ep_camera)
+        results = detection.detect_object_in_image('lego', ep_camera=ep_camera, conf=0.6)
 
         if results[0]: # if lego in FOV
             
             bb = results[1] # bounding box -  array of format [x,y,w,h] scaled to image size of (384, 640)
-            lego_dist = 1/(math.tan((bb[2]/640 * 120 * math.pi)/180.0)) * 10 # gives distance to lego in cm
+            #lego_dist = 1/(math.tan((bb[2]/640 * 120 * math.pi)/180.0)) * 10 # gives distance to lego in cm
+            lego_dist = (384/bb[3] * 18.5)/2.0 * 1/math.tan(50/180.0 * math.pi)
             horizontal_center = bb[0] + bb[2]/2
             print("Width: " + str(bb[2]))
+            print("HEIGHT: " + str(bb[-1]))
             print("Top Height: " + str(bb[1]))
             distance_error = 0 - lego_dist # finding error in vertical
             horizontal_distance = horizontal_center - 320 - 20 # finding error in horizontal
@@ -85,11 +87,12 @@ def move_to_lego(translation_speed = 0.20, rotational_speed = 10,
                 gripping.LookDown(ep_arm=ep_arm)
                 looking_down_2 = True
 
-            elif (lego_dist < 40 or (bb[1] > 210 and looking_down_2)):
+            elif (lego_dist < 35 or (bb[1] > 270 and looking_down_2)):
+                print(bb[1])
                 print("GIVER: MOVING TOWARDS LEGO TOWER, NOT USING CAMERA ANYMORE")
                 speed = 0.065
-                ep_chassis.drive_speed(x=speed, y=0, z=0) # drive towards lego
-                time.sleep(.2/speed)
+                #ep_chassis.drive_speed(x=speed, y=0, z=0) # drive towards lego
+                #time.sleep(./speed)
                 ep_chassis.drive_speed(x=0, y=0, z=0)
                 time.sleep(0.1)
                 return
@@ -112,9 +115,12 @@ if __name__ == '__main__':
     ep_arm = ep_robot.robotic_arm
     
     ep_camera.start_video_stream(display=True)
-    search_lego(ep_camera=ep_camera)
-    move_to_lego(ep_camera=ep_camera)
-    print("GRABBING")
-    gripping.GrabLego(ep_gripper=ep_gripper, ep_arm=ep_arm)
-    time.sleep(2)
-    gripping.DropLego(ep_gripper=ep_gripper, ep_arm=ep_arm)
+    #search_lego(ep_camera=ep_camera)
+    #move_to_lego(ep_camera=ep_camera)
+    #gripping.GrabLego(ep_gripper=ep_gripper, ep_arm=ep_arm)
+
+    # move to line
+    # send message to receiver that ready for pass
+
+    # wait for receiver to grab
+    messagingserver.StartPassingComms(ep_gripper)
