@@ -58,7 +58,10 @@ def detect_object_in_image(c='robot', conf=0.5, image=None, ep_camera=None):
 # in the image. color parameter indicates what color
 # endpoint to look for (yellow or red)
 # returns [x,y,w,h]
-def detect_endpoint(image=None, color="yellow", show=True):
+def detect_endpoint(image=None, color="yellow", show=True, ep_camera=None):
+
+    if image == None:
+        image = ep_camera.read_cv2_image(strategy="newest", timeout=5)
 
     if show:
         original = image
@@ -67,8 +70,6 @@ def detect_endpoint(image=None, color="yellow", show=True):
     if color=="yellow":
         mask = cv2.inRange(image, np.asarray([0, 200, 200]), np.asarray([150, 255, 255])) #bgr channel order
         image = cv2.bitwise_and(image, image, mask = mask)
-
-    cv2.imshow('mask', image)
 
     # performing erosion to erase false positives
     kernel = np.ones((2, 2), np.uint8)
@@ -100,8 +101,6 @@ def detect_endpoint(image=None, color="yellow", show=True):
         cv2.waitKey(0)
 
     return [True, [x, y, w, h]]
-    
-    
     
 if __name__ == '__main__':
     img = cv2.imread("C:\\umd\\senior\\cmsc477\\Project 2\\proj_code\\endpoint_test\\6.jpg")
