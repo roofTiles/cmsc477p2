@@ -14,9 +14,13 @@ import messagingserver
 def move_to_lego(translation_speed = 0.065, rotational_speed = 10, 
                  k_t = 0.01/2, k_r = 0.01, ep_camera=None):
 
+    
     results = detection.detect_object_in_image('lego', ep_camera=ep_camera)
-    bb = results[1]
+    #while not results:
+     #   ep_chassis.drive_speed(x=t0, y=0, z=0, timeout=5)
 
+    bb = results[1]
+    
     while bb[2] < 85:
         #strafe left or right
         while abs(bb[0] - 320) > 5:
@@ -54,6 +58,7 @@ if __name__ == '__main__':
     ep_gripper.open(power=100)
     move_to_lego(ep_camera=ep_camera)
     ep_gripper.close(power=100)
+    ep_arm.move(x=-60, y=90).wait_for_completed()
     #gripping.GrabLego(ep_gripper=ep_gripper, ep_arm=ep_arm)
 
     # move to line
