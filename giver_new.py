@@ -14,7 +14,7 @@ import cv2
 
 # rotates until the heading of the lego
 # is towards the robot
-def search_lego(rotational_speed = 30, k = 0.005, ep_camera=None): 
+def search_lego(rotational_speed = 20, k = 0.005, ep_camera=None): 
     
     distance = 1000000
     print('GIVER: Seaching for Legos')
@@ -49,7 +49,7 @@ def move_to_lego(translation_speed = 0.20, rotational_speed = 10,
 
     horizontal_distance = 1000000
     lego_dist = 100000
-    goal_lego_dist = 30 # cm
+    goal_lego_dist = 25 # cm
     looking_down = False
     looking_down_2 = False
 
@@ -69,7 +69,7 @@ def move_to_lego(translation_speed = 0.20, rotational_speed = 10,
             print("HEIGHT: " + str(bb[-1]))
             print("Top Height: " + str(bb[1]))
             distance_error = 0 - lego_dist # finding error in vertical
-            horizontal_distance = horizontal_center - 320 - 20 # finding error in horizontal
+            horizontal_distance = horizontal_center - 320 # finding error in horizontal
 
             print(lego_dist)
 
@@ -82,7 +82,10 @@ def move_to_lego(translation_speed = 0.20, rotational_speed = 10,
                 ep_chassis.drive_speed(x=-1*translation_speed * k_t * distance_error, y=0,
                                 z=0, timeout=5)
                 
-            if (lego_dist < 60 or bb[1] > 210) and not looking_down:
+            if (lego_dist >= 35 and bb[1] <= 280):
+                print('too far')
+            
+            elif (lego_dist < 60 or bb[1] > 210) and not looking_down:
                 gripping.LookDown(ep_arm=ep_arm)
                 looking_down = True
 
@@ -90,7 +93,7 @@ def move_to_lego(translation_speed = 0.20, rotational_speed = 10,
                 gripping.LookDown(ep_arm=ep_arm)
                 looking_down_2 = True
 
-            elif (lego_dist < 35 or (bb[1] > 270 and looking_down_2)):
+            elif (lego_dist < 35 and (bb[1] > 280 and looking_down_2)):
                 print(bb[1])
                 print("GIVER: MOVING TOWARDS LEGO TOWER, NOT USING CAMERA ANYMORE")
                 speed = 0.065
@@ -99,6 +102,12 @@ def move_to_lego(translation_speed = 0.20, rotational_speed = 10,
                 ep_chassis.drive_speed(x=0, y=0, z=0)
                 time.sleep(0.1)
                 return
+            
+            else:
+                ep_chassis.drive_speed(x=0, y=0, z=0)
+                time.sleep(0.1)
+                return
+            
 
         else:
             ep_chassis.drive_speed(x=translation_speed, y=0,
@@ -115,7 +124,6 @@ def move_to_line(ep_camera=None):
     # try:
         # Input camera feed
         image = ep_camera.read_cv2_image(strategy="newest", timeout=0.5)
-        # image = cv2.imread('C:/Users/flori/OneDrive/CMSC477/Project_02/image0.png')
 
         # apply gaussian blur
         Gaussian = cv2.GaussianBlur(image, (13, 9), 0)
@@ -156,8 +164,8 @@ def move_to_line(ep_camera=None):
                 yaw = (math.pi / 2) - thet 
                 print("yaw", np.rad2deg(yaw))
                 
-                y = []
-                x = []
+            y = []
+            x = []
 
             # determine equation of mean line to plot
             if thet < math.pi / 2:
@@ -169,66 +177,41 @@ def move_to_line(ep_camera=None):
                 x0 = -r / math.cos(math.pi - thet)
                 y0 = r / math.cos(thet - math.pi / 2)
                 m = -y0 / x0
+            
 
-            for j in range(0, 641):
-                # print("inside for loop")
-                if m * j + y0 < 360:
-                    print("inside if")
+            for j in range(0, 1280):
+                if m * j + y0 < 720:
                     x.append(j)
                     y.append(m * j + y0)
-
-            # draw a line on the image
-            # domain = [x[0], x[-1]]
-            # rng = [y[0], y[-1]]
-            # plt.plot(domain, rng, color="red", linewidth=1)
-            start_pt = (round(x[0]), round(y[0]))
-            end_pt = (round(x[-1]), round(y[-1]))
-            print("x0 = " + str(x[0]))
-            print("y0 = " + str(y[0]))
-            print("x1 = " + str(x[-1]))
-            print("y1 = " + str(y[-1]))
             
-            cv2.line(image, start_pt, end_pt, (255, 0, 0), thickness = 2)
-
+            
+            
             # orient robot
-            time.sleep(0.1)
-            ep_chassis.drive_speed(x=0, y=0, z=0, timeout=5)
             ep_chassis.move(x=0, y=0, z=np.rad2deg(yaw), z_speed=0.3*np.rad2deg(yaw)).wait_for_completed()
-            # ep_chassis.drive_speed(x=0, y=0, z=-np.rad2deg(yaw), timeout=5)
             time.sleep(0.1)
-
+            
+            
             if np.rad2deg(yaw) > -3 and np.rad2deg(yaw) < 3:
                 Oriented = True
                 # move robot
-                y_min = 110  # pixels 124
-                y_end = 270  # pixels 285
+                y_min = 110*2  # pixels 124
+                y_end = 285*2  # pixels 285
                 ws_inside_dist = 1.15  # [m]
                 scale = ws_inside_dist/(y_end - y_min)
-                pixel_dist = round((y[0] + y[-1])/2)
+                if len(y) > 0:
+                    pixel_dist = round((y[0] + y[-1])/2)
+                else:
+                    pixel_dist = y_end
                 x_vel = abs(pixel_dist-y_end)*scale
                 print("pixel distance:", pixel_dist)
                 print("actual distance", x_vel)
-                # ep_chassis.drive_speed(x=x_vel, y=0, z=0, timeout=5)
-                # time.sleep(3)
-                ep_chassis.move(x=x_vel, y=0, z=0, z_speed=0).wait_for_completed()
+                ep_chassis.move(x=x_vel, y=0, z=0, xy_speed=x_vel*.33).wait_for_completed()
+            
 
 
         else:
             print('Target line is out of view')
-            # orient robot
-            ep_chassis.drive_speed(x=0, y=0, z=15, timeout=5)
-            #ep_chassis.move(x=0, y=0, z=15, z_speed=15).wait_for_completed()
-            print('Test')
-        # plt.imshow(image)
-        # plt.show()
-        # cv2.imshow("img", image)
-        # cv2.waitKey(10)
-
-    # except KeyboardInterrupt:
-    #     ep_camera.stop_video_stream()
-    #     ep_robot.close()
-    #     print('Exiting')
-    #     exit(1)
+            ep_chassis.move(x=0, y=0, z=15, z_speed=15).wait_for_completed()
 
         
 
@@ -241,12 +224,20 @@ if __name__ == '__main__':
     ep_arm = ep_robot.robotic_arm
     
     ep_camera.start_video_stream(display=True)
-    #search_lego(ep_camera=ep_camera)
-    #move_to_lego(ep_camera=ep_camera)
-    #gripping.GrabLego(ep_gripper=ep_gripper, ep_arm=ep_arm)
+    
+    ep_gripper.open(power=50) # for grabbing
+    
+    search_lego(ep_camera=ep_camera)
+    move_to_lego(ep_camera=ep_camera)
+    gripping.GrabLego(ep_gripper=ep_gripper, ep_arm=ep_arm)
+    print('Done grabbing')
+    ep_arm.move(x=0, y=-20).wait_for_completed()
+    #gripping.LookDown(ep_arm=ep_arm, ep_gripper=ep_gripper, y=40) # move arm down to see line
+    print('looking down for line')
 
     # move to line
     move_to_line(ep_camera=ep_camera)
+    print('done moving to line')
     ep_gripper.open(power = 100)
     # send message to receiver that ready for pass
 

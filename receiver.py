@@ -5,116 +5,90 @@ import time
 import math
 import detection
 import gripping
+import cv2
 import messagingclient
 
-# orienting to blue line
-# WORK IN PROGRESS
-def blue_line_orient(ep_camera=None):
+def orient_to_line(ep_camera=None):
+
     Oriented = False
+
     while not Oriented:
-        try:
-            # Input camera feed
-            image = ep_camera.read_cv2_image(strategy="newest", timeout=0.5)
+    # try:
+        # Input camera feed
+        image = ep_camera.read_cv2_image(strategy="newest", timeout=0.5)
 
-            # apply gaussian blur
-            Gaussian = cv2.GaussianBlur(image, (13, 9), 0)
+        # apply gaussian blur
+        Gaussian = cv2.GaussianBlur(image, (13, 9), 0)
 
-            hsv = cv2.cvtColor(Gaussian, cv2.COLOR_BGR2HSV)
+        hsv = cv2.cvtColor(Gaussian, cv2.COLOR_BGR2HSV)
 
-            # Threshold of blue in HSV space
-            lower_blue = np.array([60, 60, 130])  # [60, 35, 140]
-            upper_blue = np.array([160, 220, 255])  # [180, 255, 255]
+        # Threshold of blue in HSV space
+        lower_blue = np.array([60, 60, 130])  # [60, 35, 140]
+        upper_blue = np.array([160, 220, 255])  # [180, 255, 255]
 
-            # preparing the mask to overlay
-            mask2 = cv2.inRange(hsv, lower_blue, upper_blue)
+        # preparing the mask to overlay
+        mask2 = cv2.inRange(hsv, lower_blue, upper_blue)
 
-            # The black region in the mask has the value of 0,
-            # so when multiplied with original image removes all non-blue regions
-            result = cv2.bitwise_and(Gaussian, Gaussian, mask=mask2)
+        # The black region in the mask has the value of 0,
+        # so when multiplied with original image removes all non-blue regions
+        result = cv2.bitwise_and(Gaussian, Gaussian, mask=mask2)
 
-            # Apply edge detection method on the image
-            edges = cv2.Canny(mask2, 50, 150, apertureSize=3)
+        # Apply edge detection method on the image
+        edges = cv2.Canny(mask2, 50, 150, apertureSize=3)
 
-            # This returns an array of r and theta values
-            lines = cv2.HoughLines(edges, 1, np.pi / 180, 200)
+        # This returns an array of r and theta values
+        lines = cv2.HoughLines(edges, 1, np.pi / 180, 200)
+        print(str(lines))
+        r_vals = 0
+        thet_vals = 0
 
-            r_vals = 0
-            thet_vals = 0
-            try:
 
-                # average all lines
-                for i in range(len(lines)):
-                    r_vals = r_vals + lines[i][0][0]
-                    thet_vals = thet_vals + lines[i][0][1]
-                    r = r_vals / (i + 1)
-                    thet = thet_vals / (i + 1)
+        if not lines is None:
 
-                    # yaw angle
-                    yaw = (mth.pi / 2) - thet 
-                    print("yaw", np.rad2deg(yaw))
-                    
-                    y = []
-                    x = []
+            # average all lines
+            for i in range(len(lines)):
+                r_vals = r_vals + lines[i][0][0]
+                thet_vals = thet_vals + lines[i][0][1]
+                r = r_vals / (i + 1)
+                thet = thet_vals / (i + 1)
 
-                # determine equation of mean line to plot
-                if thet < mth.pi / 2:
-                    x0 = r / mth.cos(thet)
-                    y0 = r / mth.cos(mth.pi / 2 - thet)
-                    m = -y0 / x0
-
-                elif thet > mth.pi / 2:
-                    x0 = -r / mth.cos(mth.pi - thet)
-                    y0 = r / mth.cos(thet - mth.pi / 2)
-                    m = -y0 / x0
-
-                for j in range(0, 641):
-                    if m * j + y0 < 360:
-                        x.append(j)
-                        y.append(m * j + y0)
-
-                # draw a line on the image
-                # domain = [x[0], x[-1]]
-                # rng = [y[0], y[-1]]
-                # plt.plot(domain, rng, color="red", linewidth=1)
-                start_pt = (round(x[0]), round(y[0]))
-                end_pt = (round(x[-1]), round(y[-1]))
-                print("x0 = " + str(x[0]))
-                print("y0 = " + str(y[0]))
-                print("x1 = " + str(x[-1]))
-                print("y1 = " + str(y[-1]))
+                # yaw angle
+                yaw = (math.pi / 2) - thet 
+                print("yaw", np.rad2deg(yaw))
                 
-                cv2.line(image, start_pt, end_pt, (255, 0, 0), thickness = 2)
+            y = []
+            x = []
 
-                # orient robot
-                ep_chassis.move(x=0, y=0, z=np.rad2deg(yaw), z_speed=0.3*np.rad2deg(yaw)).wait_for_completed()
-                
-                # ep_chassis.drive_speed(x=0, y=0, z=-np.rad2deg(yaw), timeout=5)
-                time.sleep(1)
+            # determine equation of mean line to plot
+            if thet < math.pi / 2:
+                x0 = r / math.cos(thet)
+                y0 = r / math.cos(math.pi / 2 - thet)
+                m = -y0 / x0
 
-                if np.rad2deg(yaw) > -3 and np.rad2deg(yaw) < 3:
-                    Oriented = True
-                    # move robot
-                    y_min = 110  # pixels 124
-                    y_end = 270  # pixels 285
-                    ws_inside_dist = 1.15  # [m]
-                    scale = ws_inside_dist/(y_end - y_min)
-                    pixel_dist = round((y[0] + y[-1])/2)
-                    x_vel = abs(pixel_dist-y_end)*scale
-                    print("pixel distance:", pixel_dist)
-                    print("actual distance", x_vel)
-                    # ep_chassis.drive_speed(x=x_vel, y=0, z=0, timeout=5)
-                    # time.sleep(3)
-                    ep_chassis.move(x=x_vel, y=0, z=0, z_speed=0).wait_for_completed()
+            elif thet > math.pi / 2:
+                x0 = -r / math.cos(math.pi - thet)
+                y0 = r / math.cos(thet - math.pi / 2)
+                m = -y0 / x0
+            
 
-                    # orient robot
-                    ep_chassis.move(x=0, y=0, z=np.rad2deg(yaw), z_speed=20).wait_for_completed()
-
-            except TypeError:
-                print('Target line is out of view')
-                
-                # orient robot
-                ep_chassis.move(x=0, y=0, z=-15, z_speed=30).wait_for_completed()
-                ep_chassis.move(x=0, y=0, z=np.rad2deg(np.pi/6), z_speed=20).wait_for_completed()
+            for j in range(0, 1280):
+                if m * j + y0 < 720:
+                    x.append(j)
+                    y.append(m * j + y0)
+            
+            
+            
+            # orient robot
+            ep_chassis.move(x=0, y=0, z=np.rad2deg(yaw), z_speed=0.3*np.rad2deg(yaw)).wait_for_completed()
+            time.sleep(0.1)
+            
+            
+            if np.rad2deg(yaw) > -1.5 and np.rad2deg(yaw) < 1.5:
+                Oriented = True
+                return
+        else:
+            print('Target line is out of view')
+            ep_chassis.move(x=0, y=0, z=15, z_speed=15).wait_for_completed()
 
 # Defines functionality that is specific
 # to the robot handing off the lego tower (the giver)
@@ -168,6 +142,9 @@ def move_to_giver(translation_speed = 0.2, rotational_speed = 10,
     giver_y = 100000
     goal_giver_y = 255 # px
 
+    prev_y = 0
+    count = 0
+
     print('RECEIVER: Moving towards the robot')
 
     while (np.abs(giver_y - goal_giver_y) > 5):
@@ -180,8 +157,18 @@ def move_to_giver(translation_speed = 0.2, rotational_speed = 10,
             giver_y = bb[1]
             horizontal_center = bb[0]
             print("Y: " + str(bb[1]))
+            print("COUNT: " + str(count))
             distance_error = giver_y - goal_giver_y
             horizontal_distance = horizontal_center - 320 # finding error in horizontal
+
+            if np.abs(prev_y-giver_y) <= 1.5:
+                count = count + 1
+                
+            if np.abs(prev_y-giver_y) > 1.5:
+                count = 0
+
+            if count > 4:
+                break
 
             if (horizontal_distance > 10):
                 ep_chassis.drive_speed(x=-1*translation_speed * k_t * distance_error, y=0,
@@ -192,7 +179,9 @@ def move_to_giver(translation_speed = 0.2, rotational_speed = 10,
                                 z=0, timeout=5)
  
             elif (giver_y > goal_giver_y):
-                break           
+                break
+
+            prev_y = giver_y
 
         else:
             ep_chassis.drive_speed(x=translation_speed, y=0,
@@ -301,19 +290,19 @@ if __name__ == '__main__':
     ep_camera.start_video_stream(display=True)
 
     # orient with line
-    blue_line_orient(ep_camera=ep_camera)
+    orient_to_line(ep_camera=ep_camera)
 
     # wait for giver to send message that ready to pass
 
     # for strafing to giver
-    #strafe_to_giver(ep_camera=ep_camera)
+    strafe_to_giver(ep_camera=ep_camera)
 
     # moving to giver
-    '''
-    gripping.LookDown(ep_arm=ep_arm, x = 80, y = 70)
+    ep_gripper.open(power=50)
+    gripping.LookDown(ep_arm=ep_arm, x = 80, y = 60)
     move_to_giver(ep_camera=ep_camera)
     ep_gripper.close(power=100)
-    '''
+    
 
     # send message to giver saying grabbed lego
     #messagingclient.SendGrabMessage(0)
