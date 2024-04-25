@@ -94,6 +94,9 @@ def detect_endpoint(image=None, color="yellow", show=True, ep_camera=None):
     # get bb around endpoint contour
     x,y,w,h = cv2.boundingRect(endpoint_cnt)
 
+    if w < 25:
+        return [False, None]
+
     # show where endpoint being detected
     if show:
         original = cv2.rectangle(original,(x,y),(x+w,y+h),(0,255,0),2)
