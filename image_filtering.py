@@ -11,10 +11,14 @@ if __name__ == '__main__':
     ep_robot = robot.Robot()
     ep_robot.initialize(conn_type="ap")
     ep_camera = ep_robot.camera
+<<<<<<< HEAD
     ep_chassis = ep_robot.chassis
     ep_camera.start_video_stream(display=True, resolution=camera.STREAM_360P)
     
     Oriented = False
+=======
+    ep_camera.start_video_stream(display=True, resolution=camera.STREAM_360P)
+>>>>>>> aae9c7c8aa62d461efc73e4c19b516efd6e56243
 
     while not Oriented:
         try:
@@ -78,6 +82,7 @@ if __name__ == '__main__':
                         x.append(j)
                         y.append(m * j + y0)
 
+<<<<<<< HEAD
                 # draw a line on the image
                 # domain = [x[0], x[-1]]
                 # rng = [y[0], y[-1]]
@@ -110,12 +115,20 @@ if __name__ == '__main__':
                     # ep_chassis.drive_speed(x=x_vel, y=0, z=0, timeout=5)
                     # time.sleep(3)
                     ep_chassis.move(x=x_vel, y=0, z=0, z_speed=0).wait_for_completed()
+=======
+                    # orient robot
+                    ep_chassis.move(x=0, y=0, z=np.rad2deg(yaw), z_speed=20).wait_for_completed()
+>>>>>>> aae9c7c8aa62d461efc73e4c19b516efd6e56243
 
 
             except TypeError:
                 print('Target line is out of view')
                 # orient robot
+<<<<<<< HEAD
                 ep_chassis.move(x=0, y=0, z=-15, z_speed=30).wait_for_completed()
+=======
+                ep_chassis.move(x=0, y=0, z=np.rad2deg(np.pi/6), z_speed=20).wait_for_completed()
+>>>>>>> aae9c7c8aa62d461efc73e4c19b516efd6e56243
 
             # plt.imshow(image)
             # plt.show()
@@ -125,5 +138,9 @@ if __name__ == '__main__':
         except KeyboardInterrupt:
             ep_camera.stop_video_stream()
             ep_robot.close()
+<<<<<<< HEAD
             print('Exiting')
+=======
+            printpyt('Exiting')
+>>>>>>> aae9c7c8aa62d461efc73e4c19b516efd6e56243
             exit(1)
