@@ -4,7 +4,6 @@ from robomaster import camera
 import cv2
 import numpy as np
 
-#model = YOLO("models/OnlyGripperIsNull.pt")
 model = YOLO("models/best.pt")
 
 # c is the desired class type for obj detection with the following
