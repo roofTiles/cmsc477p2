@@ -8,6 +8,32 @@ import gripping
 import cv2
 import messagingclient
 
+def search_lego(rotational_speed = 20, k = 0.01, ep_camera=None): 
+    
+    distance = 1000000
+    print('RECEIVER: Seaching for Giver')
+
+    # want bounding box as close to center of img in horizontal dir
+    while np.abs(distance) > 50: # bounding box x-center must be 200 away from center of img
+
+        results = detection.detect_object_in_image('lego', ep_camera=ep_camera, conf=0.5)
+
+        if results[0] > 0: # if lego in FOV
+            # ep_chassis.drive_speed(x=0, y=0, z=0, timeout=5)
+            # time.sleep(3)
+            bb = results[1] # bounding box -  array of format [x,y,w,h] scaled to image size of (384, 640)
+            horizontal_center = bb[0]
+            distance = horizontal_center - 640/2 # finding error in horizontal
+            ep_chassis.drive_speed(x=0, y=0, z=k * distance * rotational_speed, timeout=5)
+
+        else:
+            ep_chassis.drive_speed(x=0, y=0, z=rotational_speed, timeout=5)
+
+        # time.sleep(0.1)
+
+    ep_chassis.drive_speed(x=0, y=0, z=0, timeout=5) # stop rotating
+    print('RECEIVER: Facing the Giver')
+
 def orient_to_line(ep_camera=None):
 
     Oriented = False
@@ -83,7 +109,7 @@ def orient_to_line(ep_camera=None):
             time.sleep(0.1)
             
             
-            if np.rad2deg(yaw) > -1.5 and np.rad2deg(yaw) < 1.5:
+            if np.rad2deg(yaw) > -2 and np.rad2deg(yaw) < 2:
                 Oriented = True
                 return
         else:
@@ -94,7 +120,7 @@ def orient_to_line(ep_camera=None):
 # to the robot handing off the lego tower (the giver)
 
 # have receiver strafe to the giver
-def strafe_to_giver(translational_speed = 0.075, k = 0.05, ep_camera=None):
+def strafe_to_giver(translational_speed = 0.075, k = 0.03, ep_camera=None):
     
     distance = 1000000
     print('RECEIVER: Strafing to Giver robot')
@@ -140,7 +166,7 @@ def move_to_giver(translation_speed = 0.2, rotational_speed = 10,
     
     horizontal_distance = 1000000
     giver_y = 100000
-    goal_giver_y = 255 # px
+    goal_giver_y = 255 # px -> was 255 before
 
     prev_y = 0
     count = 0
@@ -167,7 +193,7 @@ def move_to_giver(translation_speed = 0.2, rotational_speed = 10,
             if np.abs(prev_y-giver_y) > 1.5:
                 count = 0
 
-            if count > 4:
+            if count >= 3 and giver_y > 200:
                 break
 
             if (horizontal_distance > 10):
@@ -195,9 +221,81 @@ def move_to_giver(translation_speed = 0.2, rotational_speed = 10,
     print("RECEIVER: At Giver")
     return
 
+def move_to_lego(translation_speed = 0.20, rotational_speed = 10, 
+                 k_t = 0.01/2, k_r = 0.01, ep_camera=None):
+
+    horizontal_distance = 1000000
+    lego_dist = 100000
+    goal_lego_dist = 25 # cm
+    looking_down = False
+    looking_down_2 = False
+
+    print('GIVER: Moving towards the Legos')
+
+    while (np.abs(lego_dist - goal_lego_dist) > 5):
+           
+        results = detection.detect_object_in_image('lego', ep_camera=ep_camera, conf=0.7)
+
+        if results[0]: # if lego in FOV
+            
+            bb = results[1] # bounding box -  array of format [x,y,w,h] scaled to image size of (384, 640)
+            lego_dist = 1/(math.tan((bb[2]/640 * 120 * math.pi)/180.0)) * 10 # gives distance to lego in cm
+            # lego_dist = (384/bb[3] * 18.5)/2.0 * 1/math.tan(50/180.0 * math.pi)
+            horizontal_center = bb[0]
+            print("Width: " + str(bb[2]))
+            print("HEIGHT: " + str(bb[-1]))
+            print("Top Height: " + str(bb[1]))
+            distance_error = 0 - lego_dist # finding error in vertical
+            horizontal_distance = horizontal_center - 320 # finding error in horizontal
+
+            print(lego_dist)
+
+            if (horizontal_distance > 5):
+                ep_chassis.drive_speed(x=-1*translation_speed * k_t * distance_error, y=0,
+                                z= rotational_speed * k_r * horizontal_distance, timeout=5)
+                print("ROTATING: " + str(rotational_speed * k_r * horizontal_distance))
+
+            if (horizontal_distance <= 5):
+                ep_chassis.drive_speed(x=-1*translation_speed * k_t * distance_error, y=0,
+                                z=0, timeout=5)
+                
+            if (lego_dist >= 35 and bb[1] <= 280):
+                print('too far')
+            
+            elif (lego_dist < 60 or bb[1] > 210) and not looking_down:
+                gripping.LookDown(ep_arm=ep_arm)
+                looking_down = True
+
+            elif (lego_dist < 45 or bb[1] > 210) and not looking_down_2:
+                gripping.LookDown(ep_arm=ep_arm)
+                looking_down_2 = True
+
+            elif (lego_dist < 35 and (bb[1] > 280 and looking_down_2)):
+                print(bb[1])
+                print("GIVER: MOVING TOWARDS LEGO TOWER, NOT USING CAMERA ANYMORE")
+                speed = 0.065
+                #ep_chassis.drive_speed(x=speed, y=0, z=0) # drive towards lego
+                #time.sleep(./speed)
+                ep_chassis.drive_speed(x=0, y=0, z=0)
+                time.sleep(0.1)
+                return
+            
+            else:
+                ep_chassis.drive_speed(x=0, y=0, z=0)
+                time.sleep(0.1)
+                return
+            
+
+        else:
+            ep_chassis.drive_speed(x=translation_speed, y=0,
+                                z=0, timeout=5)
+            
+            time.sleep(0.1)
+    ep_chassis.drive_speed(x=0, y=0, z=0, timeout=5)
+
 
 # make reeciver face endpoint
-def search_endpoint(rotational_speed = 10, k = 0.01, ep_camera=None): 
+def search_endpoint(rotational_speed = 10, k = 0.02, ep_camera=None): 
     
     distance = 1000000
     print('RECEIVER: Seaching for Endpoint')
@@ -247,7 +345,7 @@ def move_to_endpoint(translation_speed = 0.04, rotational_speed = 10,
             width_error = (goal_width) - width # finding height in box width
 
             horizontal_center = bb[0]
-            horizontal_distance = horizontal_center - 1280/2 # finding error in horizontal
+            horizontal_distance = horizontal_center - 1280/2 - 400 # finding error in horizontal
 
 
             if (horizontal_distance > 100):
@@ -264,7 +362,7 @@ def move_to_endpoint(translation_speed = 0.04, rotational_speed = 10,
                 count = 0
             prev_width = width
 
-            if count == 3:
+            if count >= 3:
                 break
 
         else:
@@ -290,29 +388,37 @@ if __name__ == '__main__':
     ep_camera.start_video_stream(display=True)
 
     # orient with line
-    orient_to_line(ep_camera=ep_camera)
+    #orient_to_line(ep_camera=ep_camera)
 
     # wait for giver to send message that ready to pass
 
     # for strafing to giver
-    strafe_to_giver(ep_camera=ep_camera)
+    #strafe_to_giver(ep_camera=ep_camera)
+    search_lego(ep_camera=ep_camera)
 
     # moving to giver
     ep_gripper.open(power=50)
     gripping.LookDown(ep_arm=ep_arm, x = 80, y = 60)
     move_to_giver(ep_camera=ep_camera)
-    ep_gripper.close(power=100)
+    ep_gripper.close(power=50)
+    ep_chassis.drive_speed(x=0.0, y=0.0, z=0.0, timeout=5)
+    time.sleep(30)
     
 
     # send message to giver saying grabbed lego
     #messagingclient.SendGrabMessage(0)
     
     # for going to endpoint
-    '''
+
+    ep_chassis.drive_speed(x=-0.2, y=0.0, z=0.0, timeout=5)
+    time.sleep(2)
+    ep_chassis.drive_speed(x=0, y=0.0, z=0.0, timeout=5)
+    time.sleep(0.2)
+    
     gripping.LookUp(ep_arm=ep_arm, x = 80, y = 70)
     gripping.LookDown(ep_gripper=ep_gripper, ep_arm=ep_arm, x=0, y=50) # have arm down before looking for endpoint
     search_endpoint(ep_camera=ep_camera)
     move_to_endpoint(ep_camera=ep_camera)
-    ep_gripper.open(power=100)
-    '''
+    ep_gripper.open(power=50)
+    
     

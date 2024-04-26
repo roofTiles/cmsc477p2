@@ -14,7 +14,7 @@ import cv2
 
 # rotates until the heading of the lego
 # is towards the robot
-def search_lego(rotational_speed = 20, k = 0.005, ep_camera=None): 
+def search_lego(rotational_speed = 20, k = 0.01, ep_camera=None): 
     
     distance = 1000000
     print('GIVER: Seaching for Legos')
@@ -22,7 +22,7 @@ def search_lego(rotational_speed = 20, k = 0.005, ep_camera=None):
     # want bounding box as close to center of img in horizontal dir
     while np.abs(distance) > 50: # bounding box x-center must be 200 away from center of img
 
-        results = detection.detect_object_in_image('lego', ep_camera=ep_camera, conf=0.8)
+        results = detection.detect_object_in_image('lego', ep_camera=ep_camera, conf=0.5)
 
         if results[0] > 0: # if lego in FOV
             # ep_chassis.drive_speed(x=0, y=0, z=0, timeout=5)
@@ -142,7 +142,7 @@ def move_to_line(ep_camera=None):
         result = cv2.bitwise_and(Gaussian, Gaussian, mask=mask2)
 
         # Apply edge detection method on the image
-        edges = cv2.Canny(mask2, 50, 150, apertureSize=3)
+        edges = cv2.Canny(result, 50, 150, apertureSize=3)
 
         # This returns an array of r and theta values
         lines = cv2.HoughLines(edges, 1, np.pi / 180, 200)
@@ -187,8 +187,10 @@ def move_to_line(ep_camera=None):
             
             
             # orient robot
-            ep_chassis.move(x=0, y=0, z=np.rad2deg(yaw), z_speed=0.3*np.rad2deg(yaw)).wait_for_completed()
-            time.sleep(0.1)
+            #ep_chassis.move(x=0, y=0, z=np.rad2deg(yaw), z_speed=0.3*np.rad2deg(yaw)).wait_for_completed()
+            ep_chassis.drive_speed(x=0, y=0, z=-1*np.rad2deg(yaw))
+            time.sleep(1)
+            #time.sleep(0.1)
             
             
             if np.rad2deg(yaw) > -3 and np.rad2deg(yaw) < 3:
@@ -205,13 +207,19 @@ def move_to_line(ep_camera=None):
                 x_vel = abs(pixel_dist-y_end)*scale
                 print("pixel distance:", pixel_dist)
                 print("actual distance", x_vel)
-                ep_chassis.move(x=x_vel, y=0, z=0, xy_speed=x_vel*.33).wait_for_completed()
+                #ep_chassis.move(x=x_vel, y=0, z=0, xy_speed=x_vel*.33).wait_for_completed()
+                ep_chassis.drive_speed(x=x_vel/11, y=0, z=0)
+                time.sleep(10)
+                ep_chassis.drive_speed(x=0, y=0, z=0)
+                time.sleep(0.5)
             
 
 
         else:
             print('Target line is out of view')
-            ep_chassis.move(x=0, y=0, z=15, z_speed=15).wait_for_completed()
+            #ep_chassis.move(x=0, y=0, z=15, z_speed=15).wait_for_completed()
+            ep_chassis.drive_speed(x=0, y=0, z=-15)
+            time.sleep(1)
 
         
 
@@ -228,17 +236,29 @@ if __name__ == '__main__':
     ep_gripper.open(power=50) # for grabbing
     
     search_lego(ep_camera=ep_camera)
+    ep_chassis.drive_speed(x=0, y=0, z=0, timeout=5)
+    time.sleep(0.5)
     move_to_lego(ep_camera=ep_camera)
+    ep_chassis.drive_speed(x=0, y=0, z=0, timeout=5)
+    time.sleep(0.5)
     gripping.GrabLego(ep_gripper=ep_gripper, ep_arm=ep_arm)
     print('Done grabbing')
-    ep_arm.move(x=0, y=-20).wait_for_completed()
-    #gripping.LookDown(ep_arm=ep_arm, ep_gripper=ep_gripper, y=40) # move arm down to see line
     print('looking down for line')
 
     # move to line
     move_to_line(ep_camera=ep_camera)
     print('done moving to line')
-    ep_gripper.open(power = 100)
+
+    time.sleep(30)
+
+    print('releasing gripper')
+    ep_gripper.open(power=50)
+    ep_chassis.drive_speed(x=-0.2, y=0, z=0, timeout=5)
+    time.sleep(1.5)
+    ep_chassis.drive_speed(x=0, y=0, z=0, timeout=5)
+    time.sleep(0.1)
+
+    ep_robot.close()
     # send message to receiver that ready for pass
 
     # wait for receiver to grab

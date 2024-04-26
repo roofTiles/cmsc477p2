@@ -15,37 +15,41 @@ ep_chassis = ep_robot.chassis
 
 def LookDown(ep_gripper=None, ep_arm=None, x=0, y=30, power=50):
     # Move forward xmm, drop down ymm
+    print('hello')
     ep_arm.move(x=x, y=-y).wait_for_completed()
+    print('goodbye')
 
 def LookUp(ep_gripper=None, ep_arm=None, x=0, y=30, power=50):
     # Move forward xmm, drop down ymm
     ep_arm.move(x=x, y=y).wait_for_completed()
 
-def GrabLego(ep_gripper=None, ep_arm=None, x=60, y=100, power=100):
+def GrabLego(ep_gripper=None, ep_arm=None, x=62, y=60, power=50):
     # open gripper
     ep_gripper.open(power=power)
     time.sleep(1)
-    ep_gripper.pause()
+    #ep_gripper.pause()
 
     # Move forward xmm, drop down ymm
-    ep_arm.move(x=x, y=0).wait_for_completed()
+    ep_arm.move(x=x, y=-y).wait_for_completed()
 
     # close gripper
     ep_gripper.close(power=power)
     time.sleep(1)
-    ep_gripper.pause()
+    #ep_gripper.pause()
 
     # Move backward xmm, move up ymm
+    print('stuck here')
     ep_arm.move(x=-x, y=y).wait_for_completed()
+    print('done')
 
-def DropLego(ep_gripper=None, ep_arm=None, x=60, y=100, power=100):
+def DropLego(ep_gripper=None, ep_arm=None, x=60, y=100, power=50):
     # Move forward xmm, drop down ymm
     ep_arm.move(x=x, y=-y).wait_for_completed()
 
     # close gripper
     ep_gripper.open(power=power)
     time.sleep(1)
-    ep_gripper.pause()
+    #ep_gripper.pause()
 
     # Move backward xmm, move up ymm
     ep_arm.move(x=-x, y=y).wait_for_completed()
