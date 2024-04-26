@@ -43,7 +43,7 @@ def search_lego(rotational_speed = 20, k = 0.01, ep_camera=None):
 # tell robot to move towards the lego tower
 # k_t is translational proportional controller
 # k_r is rotational proportional controller
-# WORK IN PROGRESS
+
 def move_to_lego(translation_speed = 0.20, rotational_speed = 10, 
                  k_t = 0.01/2, k_r = 0.01, ep_camera=None):
 
@@ -61,22 +61,14 @@ def move_to_lego(translation_speed = 0.20, rotational_speed = 10,
 
         if results[0]: # if lego in FOV
             
-            bb = results[1] # bounding box -  array of format [x,y,w,h] scaled to image size of (384, 640)
-            lego_dist = 1/(math.tan((bb[2]/640 * 120 * math.pi)/180.0)) * 10 # gives distance to lego in cm
-            # lego_dist = (384/bb[3] * 18.5)/2.0 * 1/math.tan(50/180.0 * math.pi)
+            lego_dist = (384/bb[3] * 18.5)/2.0 * 1/math.tan(50/180.0 * math.pi) # gives distance to lego in cm
             horizontal_center = bb[0]
-            print("Width: " + str(bb[2]))
-            print("HEIGHT: " + str(bb[-1]))
-            print("Top Height: " + str(bb[1]))
             distance_error = 0 - lego_dist # finding error in vertical
             horizontal_distance = horizontal_center - 320 # finding error in horizontal
-
-            print(lego_dist)
 
             if (horizontal_distance > 5):
                 ep_chassis.drive_speed(x=-1*translation_speed * k_t * distance_error, y=0,
                                 z= rotational_speed * k_r * horizontal_distance, timeout=5)
-                print("ROTATING: " + str(rotational_speed * k_r * horizontal_distance))
 
             if (horizontal_distance <= 5):
                 ep_chassis.drive_speed(x=-1*translation_speed * k_t * distance_error, y=0,
@@ -93,12 +85,9 @@ def move_to_lego(translation_speed = 0.20, rotational_speed = 10,
                 gripping.LookDown(ep_arm=ep_arm)
                 looking_down_2 = True
 
-            elif (lego_dist < 35 and (bb[1] > 280 and looking_down_2)):
-                print(bb[1])
+            elif (lego_dist < 35 and (bb[1] > 280 and looking_down_2)): # when too close to lego tower
                 print("GIVER: MOVING TOWARDS LEGO TOWER, NOT USING CAMERA ANYMORE")
                 speed = 0.065
-                #ep_chassis.drive_speed(x=speed, y=0, z=0) # drive towards lego
-                #time.sleep(./speed)
                 ep_chassis.drive_speed(x=0, y=0, z=0)
                 time.sleep(0.1)
                 return
@@ -108,7 +97,6 @@ def move_to_lego(translation_speed = 0.20, rotational_speed = 10,
                 time.sleep(0.1)
                 return
             
-
         else:
             ep_chassis.drive_speed(x=translation_speed, y=0,
                                 z=0, timeout=5)
@@ -121,7 +109,6 @@ def move_to_line(ep_camera=None):
     Oriented = False
 
     while not Oriented:
-    # try:
         # Input camera feed
         image = ep_camera.read_cv2_image(strategy="newest", timeout=0.5)
 
@@ -146,7 +133,6 @@ def move_to_line(ep_camera=None):
 
         # This returns an array of r and theta values
         lines = cv2.HoughLines(edges, 1, np.pi / 180, 200)
-        print(str(lines))
         r_vals = 0
         thet_vals = 0
 
@@ -187,37 +173,30 @@ def move_to_line(ep_camera=None):
             
             
             # orient robot
-            #ep_chassis.move(x=0, y=0, z=np.rad2deg(yaw), z_speed=0.3*np.rad2deg(yaw)).wait_for_completed()
             ep_chassis.drive_speed(x=0, y=0, z=-1*np.rad2deg(yaw))
             time.sleep(1)
-            #time.sleep(0.1)
-            
             
             if np.rad2deg(yaw) > -3 and np.rad2deg(yaw) < 3:
                 Oriented = True
+                
                 # move robot
                 y_min = 110*2  # pixels 124
                 y_end = 285*2  # pixels 285
                 ws_inside_dist = 1.15  # [m]
-                scale = ws_inside_dist/(y_end - y_min)
+                scale = ws_inside_dist/(y_end - y_min) # conversion from pix to meters
                 if len(y) > 0:
                     pixel_dist = round((y[0] + y[-1])/2)
                 else:
                     pixel_dist = y_end
                 x_vel = abs(pixel_dist-y_end)*scale
-                print("pixel distance:", pixel_dist)
-                print("actual distance", x_vel)
-                #ep_chassis.move(x=x_vel, y=0, z=0, xy_speed=x_vel*.33).wait_for_completed()
+
                 ep_chassis.drive_speed(x=x_vel/11, y=0, z=0)
                 time.sleep(10)
                 ep_chassis.drive_speed(x=0, y=0, z=0)
                 time.sleep(0.5)
             
-
-
         else:
             print('Target line is out of view')
-            #ep_chassis.move(x=0, y=0, z=15, z_speed=15).wait_for_completed()
             ep_chassis.drive_speed(x=0, y=0, z=-15)
             time.sleep(1)
 
@@ -234,36 +213,36 @@ if __name__ == '__main__':
     ep_camera.start_video_stream(display=True)
     
     ep_gripper.open(power=50) # for grabbing
-    
+
+    # search for the lego
     search_lego(ep_camera=ep_camera)
+    
     ep_chassis.drive_speed(x=0, y=0, z=0, timeout=5)
     time.sleep(0.5)
+
+    # move to lego
     move_to_lego(ep_camera=ep_camera)
+    
     ep_chassis.drive_speed(x=0, y=0, z=0, timeout=5)
     time.sleep(0.5)
+
+    # grab lego
     gripping.GrabLego(ep_gripper=ep_gripper, ep_arm=ep_arm)
-    print('Done grabbing')
-    print('looking down for line')
+    print('Done grabbing, looking down for line')
 
     # move to line
     move_to_line(ep_camera=ep_camera)
     print('done moving to line')
 
-    time.sleep(30)
+    time.sleep(30) # delay for receiver to come to giver
 
     print('releasing gripper')
     ep_gripper.open(power=50)
+
+    # go backwards when done gripping
     ep_chassis.drive_speed(x=-0.2, y=0, z=0, timeout=5)
     time.sleep(1.5)
     ep_chassis.drive_speed(x=0, y=0, z=0, timeout=5)
     time.sleep(0.1)
 
     ep_robot.close()
-    # send message to receiver that ready for pass
-
-    # wait for receiver to grab
-    #messagingserver.StartPassingComms(ep_gripper)
-    # send message to receiver that ready for pass
-
-    # wait for receiver to grab
-    # messagingserver.StartPassingComms(ep_gripper)
